@@ -1,0 +1,17 @@
+# 依赖
+node_modules/
+
+# 敏感文件（API Key）
+.env
+.env.*
+
+# 测试图片
+*.png
+*.jpg
+*.jpeg
+
+# npm 打包产物
+*.tgz
+
+# 日志
+*.log

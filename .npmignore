@@ -1,0 +1,14 @@
+# 敏感文件
+.env
+.env.*
+!.env.example
+
+# 开发/本地文件
+node_modules/
+Dockerfile
+.dockerignore
+glm4v.cjs
+*.png
+*.jpg
+*.jpeg
+*.log

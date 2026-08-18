@@ -1,0 +1,34 @@
+{
+  "name": "glm4v-mcp",
+  "version": "1.0.0",
+  "description": "MCP 服务器：将智谱 GLM-4V 视觉模型封装为工具（Streamable HTTP 传输），支持本地图片路径与 Data URL",
+  "type": "module",
+  "main": "glm4v-mcp.mjs",
+  "bin": {
+    "glm4v-mcp": "glm4v-mcp.mjs"
+  },
+  "files": [
+    "glm4v-mcp.mjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "glm-4v",
+    "glm4v",
+    "zhipu",
+    "vision",
+    "image-analysis"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "axios": "^1.19.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.2.0"
+  }
+}
