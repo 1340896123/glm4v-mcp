@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "glm4v": {
+      "command": "npx",
+      "args": ["-y", "glm4v-mcp", "--stdio"]
+    }
+  }
+}

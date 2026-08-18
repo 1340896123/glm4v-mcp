@@ -1,6 +1,6 @@
 # glm4v-mcp
 
-将智谱 [GLM-4V](https://open.bigmodel.cn/) 视觉模型封装为 MCP 服务器（Streamable HTTP 传输），通过 `analyze_image` 工具分析图片（支持本地图片路径或 Data URL）。
+将智谱 [GLM-4V](https://open.bigmodel.cn/) 视觉模型封装为 MCP 服务器，通过 `analyze_image` 工具分析图片（支持本地图片路径或 Data URL）。
 
 - 已发布到 npm：[glm4v-mcp](https://www.npmjs.com/package/glm4v-mcp)
 - 使用 [Model Context Protocol](https://modelcontextprotocol.io/) 标准协议，可接入任何支持 MCP 的客户端
@@ -9,8 +9,8 @@
 
 - 🖼️ **图片分析**：`analyze_image` 工具，支持本地图片路径与 Data URL
 - 🧠 **GLM-4V 视觉模型**：默认 `glm-4v-flash`（免费），可通过环境变量切换
-- 🔌 **Streamable HTTP 传输**：标准 MCP 协议，本地/远程部署均可
-- 🌐 **远程访问**：部署到服务器后，可被局域网/公网的 MCP 客户端连接
+- 🔌 **双传输模式**：`stdio`（进程直接拉起，推荐）与 `http`（Streamable HTTP，支持远程部署）
+- 🌐 **远程访问**：HTTP 模式部署到服务器后，可被局域网/公网的 MCP 客户端连接
 
 ## 环境要求
 
@@ -19,13 +19,16 @@
 
 ## 配置 API Key
 
-两种方式任选其一：
+三种方式任选其一（优先级：**请求头 > 环境变量 > .env**）：
 
 ```bash
-# 方式一：环境变量
+# 方式一：请求头（每次请求传入，支持不同客户端用不同 key）
+# 在 MCP 客户端配置中加 headers（见下方「使用 MCP」章节）
+
+# 方式二：环境变量
 export ZHIPU_API_KEY=你的key
 
-# 方式二：在启动目录创建 .env
+# 方式三：在启动目录创建 .env
 ZHIPU_API_KEY=你的key
 ```
 
@@ -33,7 +36,7 @@ ZHIPU_API_KEY=你的key
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `ZHIPU_API_KEY` | — | **必填**，智谱 API Key |
+| `ZHIPU_API_KEY` | — | **必填**（服务端配置时），智谱 API Key |
 | `MCP_PORT` | `30002` | 服务监听端口 |
 | `GLM_MODEL` | `glm-4v-flash` | 智谱模型名，可换 `glm-4v-plus` 等 |
 
@@ -42,10 +45,14 @@ ZHIPU_API_KEY=你的key
 ### 方式一：npx 直接运行（最快）
 
 ```bash
+# stdio 模式（推荐）：由 MCP 客户端直接拉起进程，无需手动启动
+npx glm4v-mcp --stdio
+
+# http 模式：手动启动，服务监听在 http://localhost:30002/mcp
 npx glm4v-mcp
 ```
 
-启动后服务监听在 `http://localhost:30002/mcp`。
+`MCP_TRANSPORT=stdio` 环境变量等效于 `--stdio` 参数。
 
 ### 方式二：源码运行
 
@@ -100,13 +107,12 @@ pm2 save && pm2 startup
 
 ## 使用 MCP（客户端连接）
 
-### Claude Code（本机）
+### Claude Code（stdio 模式，推荐）
 
-先启动服务，再注册：
+无需手动启动服务，Claude Code 会自动拉起进程：
 
 ```bash
-# 注册（一次即可，配置写入 ~/.claude.json）
-claude mcp add --transport http glm4v http://localhost:30002/mcp
+claude mcp add glm4v -- npx -y glm4v-mcp --stdio
 
 # 查看连接状态
 claude mcp list
@@ -114,7 +120,18 @@ claude mcp list
 # 重启会话后即可使用，或在会话中执行 /mcp 查看
 ```
 
-### Claude Code（远程服务器）
+### Claude Code（http 模式，本机）
+
+先启动服务，再注册：
+
+```bash
+npx glm4v-mcp  # 启动服务（保持运行）
+
+# 注册（一次即可，配置写入 ~/.claude.json）
+claude mcp add --transport http glm4v http://localhost:30002/mcp
+```
+
+### Claude Code（http 模式，远程服务器）
 
 服务部署在服务器（如 `http://192.168.1.100:30002/mcp`）时，本地无需启动服务：
 
@@ -124,7 +141,20 @@ claude mcp add --transport http glm4v http://192.168.1.100:30002/mcp
 
 ### 其他 MCP 客户端（Claude Desktop / Cursor 等）
 
-在客户端的 MCP 配置中（如 `claude_desktop_config.json` 或 Cursor 的 MCP 设置）添加：
+**stdio 方式**（Claude Desktop 的 `claude_desktop_config.json`）：
+
+```json
+{
+  "mcpServers": {
+    "glm4v": {
+      "command": "npx",
+      "args": ["-y", "glm4v-mcp", "--stdio"]
+    }
+  }
+}
+```
+
+**http 方式**（Claude Desktop / Cursor 等支持 HTTP 的客户端）：
 
 ```json
 {
@@ -138,6 +168,33 @@ claude mcp add --transport http glm4v http://192.168.1.100:30002/mcp
 ```
 
 远程服务器则把 `url` 换成服务器地址。
+
+### 通过请求头传入 API Key（可选）
+
+服务端未配置 `ZHIPU_API_KEY` 时，可在客户端配置中通过 `headers` 传入（服务端会优先使用请求头中的 key）：
+
+```json
+{
+  "mcpServers": {
+    "glm4v": {
+      "type": "http",
+      "url": "http://localhost:30002/mcp",
+      "headers": {
+        "ZHIPU_API_KEY": "你的key"
+      }
+    }
+  }
+}
+```
+
+命令行方式（Claude Code）：
+
+```bash
+claude mcp add --transport http glm4v http://localhost:30002/mcp \
+  --header "ZHIPU_API_KEY=你的key"
+```
+
+> 注：`ZHIPU_API_KEY` 为 HTTP 请求头名，Node 服务端以小写 `zhipu_api_key` 读取，客户端原样发送即可。
 
 ## 工具：analyze_image
 
@@ -159,7 +216,10 @@ claude mcp add --transport http glm4v http://192.168.1.100:30002/mcp
 **3. 服务必须保持运行**
 HTTP 传输模式下客户端通过端口实时连接，服务进程停止后工具立即不可用。生产环境请用 pm2 / systemd / Docker 保持常驻。
 
-**4. 远程访问提示超时**
+**4. stdio 模式 key 加载不到**
+stdio 模式的进程由客户端拉起（如 `npx`），`.env` 需位于客户端启动目录。建议直接用环境变量 `ZHIPU_API_KEY=xxx` 启动客户端，或改用 HTTP 模式通过请求头传 key。
+
+**5. 远程访问提示超时**
 确认云服务器安全组/防火墙放行了对应端口，且客户端能 `ping` 通服务器。
 
 ## License
