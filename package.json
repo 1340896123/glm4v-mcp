@@ -1,6 +1,6 @@
 {
   "name": "glm4v-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP 服务器：将智谱 GLM-4V 视觉模型封装为工具（Streamable HTTP 传输），支持本地图片路径与 Data URL",
   "type": "module",
   "main": "glm4v-mcp.mjs",
