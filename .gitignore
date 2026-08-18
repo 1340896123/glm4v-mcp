@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.*
 
+# 本地 MCP 配置（含 API Key，提交占位符模板即可）
+.mcp.json
+
 # 测试图片
 *.png
 *.jpg

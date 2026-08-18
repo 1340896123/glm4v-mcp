@@ -109,7 +109,30 @@ pm2 save && pm2 startup
 
 ### Claude Code（stdio 模式，推荐）
 
-无需手动启动服务，Claude Code 会自动拉起进程：
+无需手动启动服务，Claude Code 会自动拉起进程。
+
+#### 方式一：项目级 `.mcp.json` 配置（推荐：key 随配置走，不依赖启动目录的 `.env`）
+
+在项目根目录创建 `.mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "glm4v": {
+      "command": "npx",
+      "args": ["-y", "glm4v-mcp", "--stdio"],
+      "env": {
+        "GLM_MODEL": "glm-4.6v-flash",
+        "ZHIPU_API_KEY": "你的key"
+      }
+    }
+  }
+}
+```
+
+> `env` 块中的变量以环境变量形式传给进程，**优先级高于 `.env` 文件**（dotenv 不覆盖已存在的环境变量）。`.mcp.json` 含 API Key，建议加入 `.gitignore`，避免 key 提交到仓库。
+
+#### 方式二：命令行注册
 
 ```bash
 claude mcp add glm4v -- npx -y glm4v-mcp --stdio
@@ -148,7 +171,11 @@ claude mcp add --transport http glm4v http://192.168.1.100:30002/mcp
   "mcpServers": {
     "glm4v": {
       "command": "npx",
-      "args": ["-y", "glm4v-mcp", "--stdio"]
+      "args": ["-y", "glm4v-mcp", "--stdio"],
+      "env": {
+        "GLM_MODEL": "glm-4.6v-flash",
+        "ZHIPU_API_KEY": "你的key"
+      }
     }
   }
 }
@@ -217,7 +244,7 @@ claude mcp add --transport http glm4v http://localhost:30002/mcp \
 HTTP 传输模式下客户端通过端口实时连接，服务进程停止后工具立即不可用。生产环境请用 pm2 / systemd / Docker 保持常驻。
 
 **4. stdio 模式 key 加载不到**
-stdio 模式的进程由客户端拉起（如 `npx`），`.env` 需位于客户端启动目录。建议直接用环境变量 `ZHIPU_API_KEY=xxx` 启动客户端，或改用 HTTP 模式通过请求头传 key。
+stdio 模式的进程由客户端拉起（如 `npx`），`.env` 需位于客户端启动目录。最稳妥的做法：在客户端配置（`.mcp.json` / `claude_desktop_config.json`）的 `env` 块中直接写 `ZHIPU_API_KEY`（见上方示例），key 随配置走，与启动目录无关。
 
 **5. 远程访问提示超时**
 确认云服务器安全组/防火墙放行了对应端口，且客户端能 `ping` 通服务器。
